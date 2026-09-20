@@ -1,0 +1,587 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Master DSA — Dashboard</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.5/babel.min.js"></script>
+<style>
+:root{
+  --bg:#0b0e14; --panel:#12161f; --panel2:#171c27; --border:#232a38;
+  --text:#e7ecf5; --muted:#8a93a6; --accent:#5be3a8; --accent-dim:#2e7a5c;
+  --amber:#f2b544; --danger:#e06c75; --slice-muted:#2a3140;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;min-height:100vh;}
+code,pre,.mono{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;}
+.app{max-width:1180px;margin:0 auto;padding:0 20px 60px;}
+header.top{position:sticky;top:0;z-index:5;background:linear-gradient(180deg,var(--bg) 85%,transparent);padding:22px 0 14px;margin-bottom:10px;}
+.brandrow{display:flex;align-items:baseline;justify-content:space-between;gap:16px;flex-wrap:wrap;}
+.brand h1{margin:0;font-size:28px;letter-spacing:-0.02em;font-weight:800;color:var(--accent);}
+.brand .credit{margin:2px 0 0;color:var(--muted);font-size:13px;}
+.brand .credit a{color:var(--amber);text-decoration:none;border-bottom:1px dotted var(--amber);}
+.greet{font-size:14px;color:var(--muted);display:flex;align-items:center;gap:10px;}
+.greet b{color:var(--text);}
+.btn{font-size:12px;padding:6px 10px;border-radius:7px;border:1px solid var(--border);background:var(--panel2);color:var(--text);cursor:pointer;}
+.btn:hover{border-color:var(--accent);}
+.btn.link{text-decoration:none;display:inline-block;}
+.btn.primary{background:var(--accent);color:#08130e;border-color:var(--accent);font-weight:700;}
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin:18px 0 22px;}
+@media (max-width:760px){.stats{grid-template-columns:repeat(2,1fr);}}
+.stat{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:16px 16px 14px;}
+.stat .num{font-size:26px;font-weight:800;}
+.stat .lbl{font-size:12px;color:var(--muted);margin-top:2px;}
+.stat.progress .num{color:var(--accent);}
+.bar{height:8px;border-radius:5px;background:var(--panel2);overflow:hidden;margin-top:10px;}
+.bar>div{height:100%;background:linear-gradient(90deg,var(--accent-dim),var(--accent));}
+.breakdown{display:flex;gap:18px;margin:0 0 22px;flex-wrap:wrap;}
+.bsrc{flex:1;min-width:220px;background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:14px 16px;}
+.bsrc h4{margin:0 0 8px;font-size:13px;color:var(--muted);font-weight:600;}
+.bsrc .row{display:flex;justify-content:space-between;font-size:13px;margin-top:4px;}
+.bsrc.pieCard{display:flex;flex-direction:column;align-items:center;min-width:260px;}
+.pieWrap{display:flex;align-items:center;gap:16px;}
+.pieSvg{flex:0 0 auto;}
+.pieCenterNum{fill:var(--text);font-size:20px;font-weight:800;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;}
+.pieCenterLbl{fill:var(--muted);font-size:10px;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;}
+.pieLegend{display:flex;flex-direction:column;gap:6px;}
+.pieLegendRow{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text);}
+.pieDot{width:10px;height:10px;border-radius:50%;flex:0 0 auto;}
+.pieLegendLbl{color:var(--muted);}
+.pieLegendVal{font-weight:700;margin-left:auto;padding-left:10px;}
+
+/* Motivational scrolling banner */
+.motivBanner{overflow:hidden;margin:4px 0 20px;border:1px solid var(--border);border-radius:12px;background:linear-gradient(90deg,var(--panel),var(--panel2),var(--panel));mask-image:linear-gradient(90deg,transparent,#000 6%,#000 94%,transparent);-webkit-mask-image:linear-gradient(90deg,transparent,#000 6%,#000 94%,transparent);}
+.motivTrack{display:flex;width:max-content;animation:motivScroll 32s linear infinite;}
+.motivBanner:hover .motivTrack{animation-play-state:paused;}
+.motivCard{display:flex;align-items:center;gap:10px;padding:14px 26px;white-space:nowrap;border-right:1px solid var(--border);}
+.motivIcon{font-size:20px;flex:0 0 auto;}
+.motivText{font-size:13px;color:var(--text);font-weight:600;}
+@keyframes motivScroll{from{transform:translateX(0);}to{transform:translateX(-50%);}}
+@media (max-width:600px){.motivCard{padding:12px 18px;} .motivText{font-size:12px;}}
+.controls{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:14px;position:sticky;top:70px;z-index:4;background:var(--bg);padding:8px 0;}
+.controls input[type=text],.controls select{background:var(--panel);border:1px solid var(--border);color:var(--text);padding:9px 12px;border-radius:8px;font-size:14px;}
+.controls input[type=text]{flex:1;min-width:180px;}
+.toggle{display:flex;align-items:center;gap:6px;font-size:13px;color:var(--muted);background:var(--panel);border:1px solid var(--border);padding:8px 12px;border-radius:8px;cursor:pointer;user-select:none;}
+.toggle input{accent-color:var(--accent);}
+.count{font-size:13px;color:var(--muted);white-space:nowrap;}
+.list{display:flex;flex-direction:column;gap:10px;}
+.card{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:14px 16px;}
+.card.solved{border-color:var(--accent-dim);}
+.crow{display:flex;align-items:flex-start;gap:12px;}
+.check{width:22px;height:22px;border-radius:6px;border:2px solid var(--border);display:flex;align-items:center;justify-content:center;cursor:pointer;flex:0 0 auto;margin-top:2px;background:var(--panel2);font-size:14px;color:var(--accent);}
+.check.on{border-color:var(--accent);background:var(--accent-dim);}
+.cbody{flex:1;min-width:0;}
+.ctitle{display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
+.ctitle .name{font-weight:700;font-size:15px;}
+.ctitle .name.done{color:var(--muted);text-decoration:line-through;}
+.badge{font-size:11px;padding:3px 8px;border-radius:20px;border:1px solid var(--border);color:var(--muted);white-space:nowrap;}
+.badge.src1{color:var(--amber);border-color:#5a4620;}
+.badge.src2{color:var(--accent);border-color:var(--accent-dim);}
+.meta{font-size:12px;color:var(--muted);margin-top:4px;display:flex;gap:12px;flex-wrap:wrap;}
+.actions{display:flex;gap:8px;margin-top:8px;flex-wrap:wrap;}
+.remark{width:100%;margin-top:8px;background:var(--panel2);border:1px solid var(--border);color:var(--text);border-radius:8px;padding:8px 10px;font-size:13px;resize:vertical;min-height:34px;}
+.remark::placeholder{color:var(--muted);}
+pre.code{margin:10px 0 0;padding:12px 14px;background:#080a0f;border:1px solid var(--border);border-radius:8px;overflow-x:auto;font-size:12.5px;line-height:1.5;color:#c9d4e3;}
+.empty{text-align:center;color:var(--muted);padding:40px 10px;}
+footer{text-align:center;color:var(--muted);font-size:12px;margin-top:30px;}
+
+/* Auth screen */
+.authWrap{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px;}
+.authCard{width:100%;max-width:380px;background:var(--panel);border:1px solid var(--border);border-radius:14px;padding:28px 26px;}
+.authCard h1{margin:0 0 4px;color:var(--accent);font-size:24px;}
+.authCard p.sub{margin:0 0 20px;color:var(--muted);font-size:13px;}
+.field{margin-bottom:14px;}
+.field label{display:block;font-size:12px;color:var(--muted);margin-bottom:6px;}
+.field input{width:100%;background:var(--panel2);border:1px solid var(--border);color:var(--text);padding:10px 12px;border-radius:8px;font-size:14px;}
+.field input:focus{outline:2px solid var(--accent);outline-offset:1px;}
+.authErr{background:rgba(224,108,117,0.12);border:1px solid var(--danger);color:var(--danger);font-size:13px;padding:8px 12px;border-radius:8px;margin-bottom:14px;}
+.switchLine{margin-top:16px;font-size:13px;color:var(--muted);text-align:center;}
+.switchLine button{background:none;border:none;color:var(--accent);cursor:pointer;font-size:13px;padding:0;}
+.loadingScreen{min-height:100vh;display:flex;align-items:center;justify-content:center;color:var(--muted);}
+
+/* Per-user profile avatar (upload own photo) */
+.avatarWrap{position:relative;display:inline-flex;align-items:center;}
+.avatar{width:32px;height:32px;border-radius:50%;overflow:hidden;background:var(--panel2);border:2px solid var(--border);display:flex;align-items:center;justify-content:center;cursor:pointer;flex:0 0 auto;}
+.avatar:hover{border-color:var(--accent);}
+.avatar img{width:100%;height:100%;object-fit:cover;display:block;}
+.avatarInitial{font-size:13px;font-weight:700;color:var(--muted);}
+.avatarErr{position:absolute;top:38px;right:0;background:var(--danger);color:#fff;font-size:11px;padding:4px 8px;border-radius:6px;white-space:nowrap;z-index:10;}
+
+/* Creator badge - fixed corner, always visible */
+.creatorBadge{position:fixed;right:16px;bottom:16px;z-index:50;cursor:pointer;filter:drop-shadow(0 4px 14px rgba(0,0,0,0.35));}
+.creatorPhoto{width:44px;height:44px;border-radius:50%;object-fit:cover;display:block;border:2px solid var(--accent);background:var(--panel);}
+.creatorPop{position:absolute;right:0;bottom:54px;background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:12px 14px;display:flex;align-items:center;gap:10px;width:220px;cursor:default;animation:popIn .15s ease-out;}
+@keyframes popIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+.creatorPopPhoto{width:40px;height:40px;border-radius:50%;object-fit:cover;flex:0 0 auto;}
+.creatorPopName{font-size:13px;font-weight:700;color:var(--text);}
+.creatorPopRole{font-size:11px;color:var(--muted);margin:2px 0 4px;}
+.creatorPop a{font-size:12px;color:var(--accent);text-decoration:none;}
+.creatorPop a:hover{text-decoration:underline;}
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel" data-presets="react">
+const { useState, useEffect, useMemo, useCallback, useRef } = React;
+
+const CREATOR_PHOTO = "data:image/jpeg;base64,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";
+const CREATOR_NAME = "Md Sadre Alam";
+const CREATOR_URL = "https://iamsadre.vercel.app";
+
+function api(path, opts = {}) {
+  const token = localStorage.getItem('dsa_token');
+  return fetch('/api' + path, {
+    ...opts,
+    headers: {
+      'Content-Type': 'application/json',
+      ...(token ? { Authorization: 'Bearer ' + token } : {}),
+      ...(opts.headers || {})
+    }
+  }).then(async (r) => {
+    const body = await r.json().catch(() => ({}));
+    if (!r.ok) throw new Error(body.error || 'Request failed');
+    return body;
+  });
+}
+
+function AuthScreen({ onAuthed }) {
+  const [mode, setMode] = useState('login');
+  const [name, setName] = useState('');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [err, setErr] = useState('');
+  const [busy, setBusy] = useState(false);
+
+  const submit = async (e) => {
+    e.preventDefault();
+    setErr('');
+    setBusy(true);
+    try {
+      const path = mode === 'login' ? '/auth/login' : '/auth/signup';
+      const payload = mode === 'login' ? { email, password } : { name, email, password };
+      const data = await api(path, { method: 'POST', body: JSON.stringify(payload) });
+      localStorage.setItem('dsa_token', data.token);
+      onAuthed(data.user);
+    } catch (e2) {
+      setErr(e2.message);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <div className="authWrap">
+      <form className="authCard" onSubmit={submit}>
+        <h1>Master DSA</h1>
+        <p className="sub">{mode === 'login' ? 'Log in to track your progress' : 'Create an account to get started'}</p>
+        {err && <div className="authErr">{err}</div>}
+        {mode === 'signup' && (
+          <div className="field">
+            <label>Name</label>
+            <input value={name} onChange={e => setName(e.target.value)} required />
+          </div>
+        )}
+        <div className="field">
+          <label>Email</label>
+          <input type="email" value={email} onChange={e => setEmail(e.target.value)} required />
+        </div>
+        <div className="field">
+          <label>Password</label>
+          <input type="password" value={password} onChange={e => setPassword(e.target.value)} required minLength={6} />
+        </div>
+        <button className="btn primary" type="submit" style={{width:'100%', padding:'10px'}} disabled={busy}>
+          {busy ? 'Please wait...' : (mode === 'login' ? 'Log in' : 'Sign up')}
+        </button>
+        <div className="switchLine">
+          {mode === 'login' ? (
+            <span>New here? <button type="button" onClick={() => { setMode('signup'); setErr(''); }}>Create an account</button></span>
+          ) : (
+            <span>Already have an account? <button type="button" onClick={() => { setMode('login'); setErr(''); }}>Log in</button></span>
+          )}
+        </div>
+      </form>
+    </div>
+  );
+}
+
+function Stat({num, lbl, accent}){
+  return (
+    <div className={"stat" + (accent ? " progress" : "")}>
+      <div className="num">{num}</div>
+      <div className="lbl">{lbl}</div>
+    </div>
+  );
+}
+
+function PieChart({ data, size = 150, thickness = 22 }) {
+  const total = data.reduce((s, d) => s + d.value, 0);
+  const r = (size - thickness) / 2;
+  const c = 2 * Math.PI * r;
+  let offsetSoFar = 0;
+
+  return (
+    <div className="pieWrap">
+      <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} className="pieSvg">
+        <circle cx={size/2} cy={size/2} r={r} fill="none" stroke="var(--panel2)" strokeWidth={thickness} />
+        {total > 0 && data.filter(d => d.value > 0).map((d, i) => {
+          const frac = d.value / total;
+          const dash = frac * c;
+          const circle = (
+            <circle
+              key={i}
+              cx={size/2} cy={size/2} r={r}
+              fill="none"
+              stroke={d.color}
+              strokeWidth={thickness}
+              strokeDasharray={`${dash} ${c - dash}`}
+              strokeDashoffset={-offsetSoFar}
+              transform={`rotate(-90 ${size/2} ${size/2})`}
+              strokeLinecap={data.filter(x => x.value > 0).length > 1 ? "butt" : "round"}
+            />
+          );
+          offsetSoFar += dash;
+          return circle;
+        })}
+        <text x={size/2} y={size/2 - 4} textAnchor="middle" className="pieCenterNum">
+          {total ? Math.round((data[0].value / total) * 100) : 0}%
+        </text>
+        <text x={size/2} y={size/2 + 14} textAnchor="middle" className="pieCenterLbl">solved</text>
+      </svg>
+      <div className="pieLegend">
+        {data.map((d, i) => (
+          <div className="pieLegendRow" key={i}>
+            <span className="pieDot" style={{background: d.color}}></span>
+            <span className="pieLegendLbl">{d.label}</span>
+            <span className="pieLegendVal">{d.value}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function ProblemCard({p, solved, remark, onToggle, onRemark, srcAKey}){
+  const [open, setOpen] = useState(false);
+  const srcClass = p.s === srcAKey ? "src1" : "src2";
+  return (
+    <div className={"card" + (solved ? " solved" : "")}>
+      <div className="crow">
+        <div className={"check" + (solved ? " on" : "")} onClick={() => onToggle(p.n, !solved)} title="Mark solved">
+          {solved ? "✓" : ""}
+        </div>
+        <div className="cbody">
+          <div className="ctitle">
+            <span className={"name" + (solved ? " done" : "")}>{p.n}. {p.t}</span>
+            <span className={"badge " + srcClass}>{p.s}</span>
+            <span className="badge">{p.c}</span>
+          </div>
+          <div className="meta"><span>LeetCode #{p.lc}</span></div>
+          <div className="actions">
+            <a className="btn link" href={p.l} target="_blank" rel="noopener noreferrer">Open on LeetCode ↗</a>
+            <button className="btn" onClick={() => setOpen(o => !o)}>{open ? "Hide solution" : "View solution"}</button>
+          </div>
+          {open && <pre className="code">{p.code}</pre>}
+          <textarea
+            className="remark"
+            placeholder="Add a remark (approach, mistakes, revisit later...)"
+            defaultValue={remark}
+            onBlur={e => onRemark(p.n, e.target.value)}
+            rows={remark ? 2 : 1}
+          />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function resizeImageToDataUrl(file, maxSize = 200) {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    const reader = new FileReader();
+    reader.onerror = () => reject(new Error('Could not read that file'));
+    reader.onload = () => { img.src = reader.result; };
+    img.onerror = () => reject(new Error('That file is not a readable image'));
+    img.onload = () => {
+      const scale = Math.min(1, maxSize / Math.max(img.width, img.height));
+      const w = Math.round(img.width * scale);
+      const h = Math.round(img.height * scale);
+      const canvas = document.createElement('canvas');
+      canvas.width = w;
+      canvas.height = h;
+      canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+      resolve(canvas.toDataURL('image/jpeg', 0.85));
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
+function Avatar({ photo, name, onChange }) {
+  const inputRef = useRef(null);
+  const [err, setErr] = useState('');
+
+  const pick = () => inputRef.current && inputRef.current.click();
+
+  const handleFile = async (e) => {
+    const file = e.target.files && e.target.files[0];
+    e.target.value = '';
+    if (!file) return;
+    if (!file.type.startsWith('image/')) {
+      setErr('Please choose an image file');
+      return;
+    }
+    try {
+      setErr('');
+      const dataUrl = await resizeImageToDataUrl(file, 200);
+      onChange(dataUrl);
+    } catch (e2) {
+      setErr(e2.message);
+    }
+  };
+
+  const initial = (name || '?').trim().charAt(0).toUpperCase();
+
+  return (
+    <span className="avatarWrap" title="Change photo">
+      <span className="avatar" onClick={pick}>
+        {photo ? <img src={photo} alt={name} /> : <span className="avatarInitial">{initial}</span>}
+      </span>
+      <input ref={inputRef} type="file" accept="image/*" style={{display:'none'}} onChange={handleFile} />
+      {err && <span className="avatarErr">{err}</span>}
+    </span>
+  );
+}
+
+const MOTIVATION_SLIDES = [
+  { icon: "💻", text: "Every problem you solve is a rep for your next interview" },
+  { icon: "🚀", text: "FAANG engineers started exactly where you are now" },
+  { icon: "🧠", text: "Consistency beats talent — solve one more today" },
+  { icon: "🏆", text: "Top tech offers go to people who show up daily" },
+  { icon: "📈", text: "500+ solved problems is a resume line recruiters notice" },
+  { icon: "⚙️", text: "DSA mastery is your ticket into product-based companies" },
+  { icon: "🌐", text: "Remote, hybrid, on-site — strong fundamentals open every door" },
+  { icon: "🎯", text: "Your next 'Accepted' could be the one that gets you hired" }
+];
+
+function MotivationBanner() {
+  const slides = [...MOTIVATION_SLIDES, ...MOTIVATION_SLIDES];
+  return (
+    <div className="motivBanner">
+      <div className="motivTrack">
+        {slides.map((s, i) => (
+          <div className="motivCard" key={i}>
+            <span className="motivIcon">{s.icon}</span>
+            <span className="motivText">{s.text}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function CreatorBadge() {
+  const [open, setOpen] = useState(false);
+  return (
+    <div className={"creatorBadge" + (open ? " open" : "")} onClick={() => setOpen(o => !o)}>
+      <img className="creatorPhoto" src={CREATOR_PHOTO} alt={CREATOR_NAME} />
+      {open && (
+        <div className="creatorPop" onClick={e => e.stopPropagation()}>
+          <img className="creatorPopPhoto" src={CREATOR_PHOTO} alt={CREATOR_NAME} />
+          <div>
+            <div className="creatorPopName">{CREATOR_NAME}</div>
+            <div className="creatorPopRole">MERN Stack Developer</div>
+            <a href={CREATOR_URL} target="_blank" rel="noopener noreferrer" onClick={e => e.stopPropagation()}>
+              {CREATOR_URL.replace('https://', '')} ↗
+            </a>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function Dashboard({ user, onLogout, onUserUpdate }) {
+  const [problems, setProblems] = useState([]);
+  const [progress, setProgress] = useState(user.progress || {});
+  const [query, setQuery] = useState('');
+  const [srcFilter, setSrcFilter] = useState('All');
+  const [catFilter, setCatFilter] = useState('All');
+  const [onlyUnsolved, setOnlyUnsolved] = useState(false);
+
+  useEffect(() => {
+    fetch('/data/problems.json').then(r => r.json()).then(setProblems);
+  }, []);
+
+  const SOURCES = useMemo(() => [...new Set(problems.map(r => r.s))], [problems]);
+  const CATEGORIES = useMemo(() => [...new Set(problems.map(r => r.c))], [problems]);
+
+  const updateProgress = useCallback(async (n, patch) => {
+    setProgress(p => ({ ...p, [n]: { ...(p[n] || {}), ...patch } }));
+    try {
+      const body = { problemId: n, ...patch };
+      const data = await api('/progress', { method: 'PUT', body: JSON.stringify(body) });
+      setProgress(data.progress);
+    } catch (e) {
+      console.error(e);
+    }
+  }, []);
+
+  const toggleSolved = useCallback((n, val) => updateProgress(n, { solved: val }), [updateProgress]);
+  const setRemark = useCallback((n, val) => updateProgress(n, { remark: val }), [updateProgress]);
+
+  const solvedCount = useMemo(
+    () => Object.values(progress).filter(v => v && v.solved).length,
+    [progress]
+  );
+  const total = problems.length;
+  const pct = total ? Math.round((solvedCount / total) * 100) : 0;
+
+  const bySource = useMemo(() => SOURCES.map(s => {
+    const items = problems.filter(r => r.s === s);
+    const solved = items.filter(r => progress[r.n] && progress[r.n].solved).length;
+    return { s, total: items.length, solved };
+  }), [problems, progress, SOURCES]);
+
+  const filtered = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    return problems.filter(r => {
+      if (srcFilter !== 'All' && r.s !== srcFilter) return false;
+      if (catFilter !== 'All' && r.c !== catFilter) return false;
+      if (onlyUnsolved && progress[r.n] && progress[r.n].solved) return false;
+      if (q && !(r.t.toLowerCase().includes(q) || String(r.lc).includes(q))) return false;
+      return true;
+    });
+  }, [problems, query, srcFilter, catFilter, onlyUnsolved, progress]);
+
+  return (
+    <div className="app">
+      <header className="top">
+        <div className="brandrow">
+          <div className="brand">
+            <h1>Master DSA</h1>
+            <p className="credit">Prepared by Md Sadre Alam (MERN Stack Developer) · <a href="https://iamsadre.vercel.app" target="_blank" rel="noopener noreferrer">iamsadre.vercel.app</a></p>
+          </div>
+          <div className="greet">
+            Welcome, <b>{user.name}</b>
+            <Avatar
+              photo={user.photo}
+              name={user.name}
+              onChange={async (dataUrl) => {
+                try {
+                  const data = await api('/auth/photo', { method: 'PUT', body: JSON.stringify({ photo: dataUrl }) });
+                  onUserUpdate(data.user);
+                } catch (e) {
+                  console.error(e);
+                }
+              }}
+            />
+            <button className="btn" onClick={onLogout}>Log out</button>
+          </div>
+        </div>
+      </header>
+
+      <MotivationBanner />
+
+      <section className="stats">
+        <Stat num={total} lbl="Total problems" />
+        <Stat num={solvedCount} lbl="Solved" />
+        <Stat num={total - solvedCount} lbl="Remaining" />
+        <div className="stat progress">
+          <div className="num">{pct}%</div>
+          <div className="lbl">Progress</div>
+          <div className="bar"><div style={{width: pct + '%'}}></div></div>
+        </div>
+      </section>
+
+      <section className="breakdown">
+        <div className="bsrc pieCard">
+          <h4>Overall progress</h4>
+          <PieChart
+            data={[
+              { label: 'Solved', value: solvedCount, color: 'var(--accent)' },
+              { label: 'Remaining', value: total - solvedCount, color: 'var(--slice-muted)' }
+            ]}
+          />
+        </div>
+        {bySource.map(b => (
+          <div className="bsrc" key={b.s}>
+            <h4>{b.s}</h4>
+            <div className="row"><span>Solved</span><span>{b.solved} / {b.total}</span></div>
+            <div className="bar"><div style={{width: (b.total ? (b.solved/b.total*100) : 0) + '%'}}></div></div>
+          </div>
+        ))}
+      </section>
+
+      <div className="controls">
+        <input type="text" placeholder="Search by title or LeetCode #..." value={query} onChange={e => setQuery(e.target.value)} />
+        <select value={srcFilter} onChange={e => setSrcFilter(e.target.value)}>
+          <option>All</option>
+          {SOURCES.map(s => <option key={s}>{s}</option>)}
+        </select>
+        <select value={catFilter} onChange={e => setCatFilter(e.target.value)}>
+          <option>All</option>
+          {CATEGORIES.map(c => <option key={c}>{c}</option>)}
+        </select>
+        <label className="toggle">
+          <input type="checkbox" checked={onlyUnsolved} onChange={e => setOnlyUnsolved(e.target.checked)} />
+          Unsolved only
+        </label>
+        <span className="count">{filtered.length} shown</span>
+      </div>
+
+      <div className="list">
+        {filtered.length === 0 && <div className="empty">No problems match these filters.</div>}
+        {filtered.map(p => (
+          <ProblemCard
+            key={p.n}
+            p={p}
+            srcAKey={SOURCES[0]}
+            solved={!!(progress[p.n] && progress[p.n].solved)}
+            remark={(progress[p.n] && progress[p.n].remark) || ''}
+            onToggle={toggleSolved}
+            onRemark={setRemark}
+          />
+        ))}
+      </div>
+
+      <footer>Your progress and remarks are saved to your account.</footer>
+    </div>
+  );
+}
+
+function App() {
+  const [user, setUser] = useState(null);
+  const [checking, setChecking] = useState(true);
+
+  useEffect(() => {
+    const token = localStorage.getItem('dsa_token');
+    if (!token) { setChecking(false); return; }
+    api('/auth/me')
+      .then(data => setUser(data.user))
+      .catch(() => localStorage.removeItem('dsa_token'))
+      .finally(() => setChecking(false));
+  }, []);
+
+  const logout = () => {
+    localStorage.removeItem('dsa_token');
+    setUser(null);
+  };
+
+  let screen;
+  if (checking) screen = <div className="loadingScreen">Loading...</div>;
+  else if (!user) screen = <AuthScreen onAuthed={setUser} />;
+  else screen = <Dashboard user={user} onLogout={logout} onUserUpdate={setUser} />;
+
+  return (
+    <React.Fragment>
+      {screen}
+      <CreatorBadge />
+    </React.Fragment>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+</script>
+</body>
+</html>
