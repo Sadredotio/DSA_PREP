@@ -60,6 +60,16 @@ header.top{position:sticky;top:0;z-index:5;background:linear-gradient(180deg,var
 .motivText{font-size:13px;color:var(--text);font-weight:600;}
 @keyframes motivScroll{from{transform:translateX(0);}to{transform:translateX(-50%);}}
 @media (max-width:600px){.motivCard{padding:12px 18px;} .motivText{font-size:12px;}}
+
+/* Admin panel */
+.adminTableWrap{background:var(--panel);border:1px solid var(--border);border-radius:12px;overflow-x:auto;margin-top:6px;}
+.adminTable{width:100%;border-collapse:collapse;font-size:13px;}
+.adminTable th{text-align:left;padding:10px 14px;background:var(--panel2);color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.03em;border-bottom:1px solid var(--border);white-space:nowrap;}
+.adminTable td{padding:9px 14px;border-bottom:1px solid var(--border);white-space:nowrap;}
+.adminTable tr:last-child td{border-bottom:none;}
+.adminTable tr:hover td{background:var(--panel2);}
+.adminEmpty{text-align:center;color:var(--muted);padding:24px !important;}
+.muted{color:var(--muted);}
 .controls{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:14px;position:sticky;top:70px;z-index:4;background:var(--bg);padding:8px 0;}
 .controls input[type=text],.controls select{background:var(--panel);border:1px solid var(--border);color:var(--text);padding:9px 12px;border-radius:8px;font-size:14px;}
 .controls input[type=text]{flex:1;min-width:180px;}
@@ -129,6 +139,7 @@ const { useState, useEffect, useMemo, useCallback, useRef } = React;
 const CREATOR_PHOTO = "data:image/jpeg;base64,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";
 const CREATOR_NAME = "Md Sadre Alam";
 const CREATOR_URL = "https://iamsadre.vercel.app";
+const ADMIN_EMAIL = "mdsadrealam8207@gmail.com";
 
 function api(path, opts = {}) {
   const token = localStorage.getItem('dsa_token');
@@ -401,7 +412,80 @@ function CreatorBadge() {
   );
 }
 
-function Dashboard({ user, onLogout, onUserUpdate }) {
+function AdminPanel({ onBack }) {
+  const [summary, setSummary] = useState(null);
+  const [visits, setVisits] = useState(null);
+  const [err, setErr] = useState('');
+
+  useEffect(() => {
+    Promise.all([api('/admin/summary'), api('/admin/visits?limit=200')])
+      .then(([s, v]) => { setSummary(s); setVisits(v.visits); })
+      .catch(e => setErr(e.message));
+  }, []);
+
+  const fmt = (iso) => {
+    const d = new Date(iso);
+    return d.toLocaleString();
+  };
+
+  return (
+    <div className="app">
+      <header className="top">
+        <div className="brandrow">
+          <div className="brand">
+            <h1>Admin</h1>
+            <p className="credit">Visitor log for Master DSA</p>
+          </div>
+          <button className="btn" onClick={onBack}>← Back to problems</button>
+        </div>
+      </header>
+
+      {err && <div className="authErr">{err}</div>}
+
+      {summary && (
+        <section className="stats">
+          <Stat num={summary.totalUsers} lbl="Registered users" />
+          <Stat num={summary.totalVisits} lbl="Total visits" />
+          <Stat num={summary.uniqueLoggedInVisitors} lbl="Unique logged-in visitors" />
+          <Stat num={summary.visits24h} lbl="Visits (last 24h)" />
+        </section>
+      )}
+
+      <div className="adminTableWrap">
+        <table className="adminTable">
+          <thead>
+            <tr>
+              <th>Visitor</th>
+              <th>Email</th>
+              <th>When</th>
+              <th>Path</th>
+              <th>IP</th>
+            </tr>
+          </thead>
+          <tbody>
+            {visits === null && (
+              <tr><td colSpan="5" className="adminEmpty">Loading...</td></tr>
+            )}
+            {visits && visits.length === 0 && (
+              <tr><td colSpan="5" className="adminEmpty">No visits recorded yet.</td></tr>
+            )}
+            {visits && visits.map((v, i) => (
+              <tr key={i}>
+                <td>{v.name || <span className="muted">Anonymous</span>}</td>
+                <td>{v.email || <span className="muted">—</span>}</td>
+                <td>{fmt(v.at)}</td>
+                <td className="mono">{v.path}</td>
+                <td className="mono">{v.ip || '—'}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
+function Dashboard({ user, onLogout, onUserUpdate, onOpenAdmin }) {
   const [problems, setProblems] = useState([]);
   const [progress, setProgress] = useState(user.progress || {});
   const [query, setQuery] = useState('');
@@ -476,6 +560,9 @@ function Dashboard({ user, onLogout, onUserUpdate }) {
                 }
               }}
             />
+            {user.email && user.email.toLowerCase() === ADMIN_EMAIL && (
+              <button className="btn" onClick={onOpenAdmin}>Admin</button>
+            )}
             <button className="btn" onClick={onLogout}>Log out</button>
           </div>
         </div>
@@ -553,6 +640,7 @@ function Dashboard({ user, onLogout, onUserUpdate }) {
 function App() {
   const [user, setUser] = useState(null);
   const [checking, setChecking] = useState(true);
+  const [adminView, setAdminView] = useState(false);
 
   useEffect(() => {
     const token = localStorage.getItem('dsa_token');
@@ -563,15 +651,22 @@ function App() {
       .finally(() => setChecking(false));
   }, []);
 
+  // Log this visit once (works whether or not the visitor is logged in)
+  useEffect(() => {
+    api('/visit', { method: 'POST', body: JSON.stringify({ path: window.location.pathname }) }).catch(() => {});
+  }, []);
+
   const logout = () => {
     localStorage.removeItem('dsa_token');
     setUser(null);
+    setAdminView(false);
   };
 
   let screen;
   if (checking) screen = <div className="loadingScreen">Loading...</div>;
   else if (!user) screen = <AuthScreen onAuthed={setUser} />;
-  else screen = <Dashboard user={user} onLogout={logout} onUserUpdate={setUser} />;
+  else if (adminView) screen = <AdminPanel onBack={() => setAdminView(false)} />;
+  else screen = <Dashboard user={user} onLogout={logout} onUserUpdate={setUser} onOpenAdmin={() => setAdminView(true)} />;
 
   return (
     <React.Fragment>
