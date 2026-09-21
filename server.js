@@ -6,6 +6,8 @@ const mongoose = require('mongoose');
 
 const authRoutes = require('./routes/auth');
 const progressRoutes = require('./routes/progress');
+const visitRoutes = require('./routes/visit');
+const adminRoutes = require('./routes/admin');
 
 const app = express();
 
@@ -35,6 +37,8 @@ app.use(async (req, res, next) => {
 
 app.use('/api/auth', authRoutes);
 app.use('/api/progress', progressRoutes);
+app.use('/api/visit', visitRoutes);
+app.use('/api/admin', adminRoutes);
 
 // Serve the frontend (public/index.html + public/data/problems.json)
 app.use(express.static(path.join(__dirname, 'public')));
