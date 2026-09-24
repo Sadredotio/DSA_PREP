@@ -70,6 +70,8 @@ header.top{position:sticky;top:0;z-index:5;background:linear-gradient(180deg,var
 .adminTable tr:hover td{background:var(--panel2);}
 .adminEmpty{text-align:center;color:var(--muted);padding:24px !important;}
 .muted{color:var(--muted);}
+.uploadCard{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:18px 20px;max-width:420px;}
+.uploadCard h4{margin:0 0 14px;font-size:14px;color:var(--text);}
 .controls{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:14px;position:sticky;top:70px;z-index:4;background:var(--bg);padding:8px 0;}
 .controls input[type=text],.controls select{background:var(--panel);border:1px solid var(--border);color:var(--text);padding:9px 12px;border-radius:8px;font-size:14px;}
 .controls input[type=text]{flex:1;min-width:180px;}
@@ -458,24 +460,231 @@ function AdminPanel({ onBack }) {
               <th>Visitor</th>
               <th>Email</th>
               <th>When</th>
+              <th>Location</th>
               <th>Path</th>
               <th>IP</th>
             </tr>
           </thead>
           <tbody>
             {visits === null && (
-              <tr><td colSpan="5" className="adminEmpty">Loading...</td></tr>
+              <tr><td colSpan="6" className="adminEmpty">Loading...</td></tr>
             )}
             {visits && visits.length === 0 && (
-              <tr><td colSpan="5" className="adminEmpty">No visits recorded yet.</td></tr>
+              <tr><td colSpan="6" className="adminEmpty">No visits recorded yet.</td></tr>
             )}
-            {visits && visits.map((v, i) => (
-              <tr key={i}>
-                <td>{v.name || <span className="muted">Anonymous</span>}</td>
-                <td>{v.email || <span className="muted">—</span>}</td>
-                <td>{fmt(v.at)}</td>
-                <td className="mono">{v.path}</td>
-                <td className="mono">{v.ip || '—'}</td>
+            {visits && visits.map((v, i) => {
+              const loc = [v.city, v.region, v.country].filter(Boolean).join(', ');
+              return (
+                <tr key={i}>
+                  <td>{v.name || <span className="muted">Anonymous</span>}</td>
+                  <td>{v.email || <span className="muted">—</span>}</td>
+                  <td>{fmt(v.at)}</td>
+                  <td>{loc || <span className="muted">Unknown</span>}</td>
+                  <td className="mono">{v.path}</td>
+                  <td className="mono">{v.ip || '—'}</td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
+function formatBytes(n) {
+  if (!n) return '0 B';
+  const units = ['B', 'KB', 'MB', 'GB'];
+  let i = 0;
+  while (n >= 1024 && i < units.length - 1) { n /= 1024; i++; }
+  return `${n.toFixed(i === 0 ? 0 : 1)} ${units[i]}`;
+}
+
+async function fetchFileBlob(id, mode) {
+  const token = localStorage.getItem('dsa_token');
+  const res = await fetch(`/api/files/${id}/content?mode=${mode}`, {
+    headers: token ? { Authorization: 'Bearer ' + token } : {}
+  });
+  if (!res.ok) throw new Error('Could not fetch file');
+  return res.blob();
+}
+
+function UploadFileForm({ onUploaded }) {
+  const [title, setTitle] = useState('');
+  const [description, setDescription] = useState('');
+  const [file, setFile] = useState(null);
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState('');
+  const inputRef = useRef(null);
+
+  const submit = async (e) => {
+    e.preventDefault();
+    if (!file) { setErr('Choose a file first'); return; }
+    setErr('');
+    setBusy(true);
+    try {
+      const dataUrl = await new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result);
+        reader.onerror = () => reject(new Error('Could not read that file'));
+        reader.readAsDataURL(file);
+      });
+      const base64 = dataUrl.split(',')[1] || '';
+
+      const data = await api('/files', {
+        method: 'POST',
+        body: JSON.stringify({
+          title: title.trim(),
+          description: description.trim(),
+          filename: file.name,
+          mimeType: file.type,
+          dataBase64: base64
+        })
+      });
+
+      setTitle('');
+      setDescription('');
+      setFile(null);
+      if (inputRef.current) inputRef.current.value = '';
+      onUploaded(data.file);
+    } catch (e2) {
+      setErr(e2.message);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <form className="uploadCard" onSubmit={submit}>
+      <h4>Upload a new file</h4>
+      {err && <div className="authErr">{err}</div>}
+      <div className="field">
+        <label>Title</label>
+        <input value={title} onChange={e => setTitle(e.target.value)} required maxLength={150} />
+      </div>
+      <div className="field">
+        <label>Description</label>
+        <input value={description} onChange={e => setDescription(e.target.value)} maxLength={1000} placeholder="Optional" />
+      </div>
+      <div className="field">
+        <label>File (max ~8MB)</label>
+        <input ref={inputRef} type="file" onChange={e => setFile(e.target.files[0] || null)} required />
+      </div>
+      <button className="btn primary" type="submit" disabled={busy}>
+        {busy ? 'Uploading...' : 'Upload'}
+      </button>
+    </form>
+  );
+}
+
+function FilesPanel({ onBack, isAdmin }) {
+  const [files, setFiles] = useState(null);
+  const [err, setErr] = useState('');
+  const [busyId, setBusyId] = useState(null);
+
+  const load = useCallback(() => {
+    api('/files').then(d => setFiles(d.files)).catch(e => setErr(e.message));
+  }, []);
+
+  useEffect(() => { load(); }, [load]);
+
+  const view = async (f) => {
+    try {
+      setBusyId(f._id);
+      const blob = await fetchFileBlob(f._id, 'view');
+      const url = URL.createObjectURL(blob);
+      window.open(url, '_blank', 'noopener,noreferrer');
+      setTimeout(() => URL.revokeObjectURL(url), 60000);
+    } catch (e) {
+      setErr(e.message);
+    } finally {
+      setBusyId(null);
+    }
+  };
+
+  const download = async (f) => {
+    try {
+      setBusyId(f._id);
+      const blob = await fetchFileBlob(f._id, 'download');
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = f.filename;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    } catch (e) {
+      setErr(e.message);
+    } finally {
+      setBusyId(null);
+    }
+  };
+
+  const remove = async (f) => {
+    if (!window.confirm(`Delete "${f.title}"? This can't be undone.`)) return;
+    try {
+      setBusyId(f._id);
+      await api(`/files/${f._id}`, { method: 'DELETE' });
+      setFiles(fs => fs.filter(x => x._id !== f._id));
+    } catch (e) {
+      setErr(e.message);
+    } finally {
+      setBusyId(null);
+    }
+  };
+
+  return (
+    <div className="app">
+      <header className="top">
+        <div className="brandrow">
+          <div className="brand">
+            <h1>Files</h1>
+            <p className="credit">Study materials for Master DSA</p>
+          </div>
+          <button className="btn" onClick={onBack}>← Back to problems</button>
+        </div>
+      </header>
+
+      {err && <div className="authErr">{err}</div>}
+
+      {isAdmin && <UploadFileForm onUploaded={(f) => setFiles(fs => [f, ...(fs || [])])} />}
+
+      <div className="adminTableWrap" style={{marginTop: 16}}>
+        <table className="adminTable">
+          <thead>
+            <tr>
+              <th>Title</th>
+              <th>Description</th>
+              <th>File</th>
+              <th>Size</th>
+              <th>Uploaded by</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {files === null && (
+              <tr><td colSpan="6" className="adminEmpty">Loading...</td></tr>
+            )}
+            {files && files.length === 0 && (
+              <tr><td colSpan="6" className="adminEmpty">No files uploaded yet.</td></tr>
+            )}
+            {files && files.map(f => (
+              <tr key={f._id}>
+                <td>{f.title}</td>
+                <td className="muted">{f.description || '—'}</td>
+                <td className="mono">{f.filename}</td>
+                <td>{formatBytes(f.size)}</td>
+                <td className="muted">{f.uploadedByName || '—'}</td>
+                <td>
+                  <div className="actions">
+                    <button className="btn" disabled={busyId === f._id} onClick={() => view(f)}>View</button>
+                    <button className="btn" disabled={busyId === f._id} onClick={() => download(f)}>Download</button>
+                    {isAdmin && (
+                      <button className="btn" disabled={busyId === f._id} onClick={() => remove(f)}>Delete</button>
+                    )}
+                  </div>
+                </td>
               </tr>
             ))}
           </tbody>
@@ -485,7 +694,7 @@ function AdminPanel({ onBack }) {
   );
 }
 
-function Dashboard({ user, onLogout, onUserUpdate, onOpenAdmin }) {
+function Dashboard({ user, onLogout, onUserUpdate, onOpenAdmin, onOpenFiles }) {
   const [problems, setProblems] = useState([]);
   const [progress, setProgress] = useState(user.progress || {});
   const [query, setQuery] = useState('');
@@ -560,6 +769,7 @@ function Dashboard({ user, onLogout, onUserUpdate, onOpenAdmin }) {
                 }
               }}
             />
+            <button className="btn" onClick={onOpenFiles}>Files</button>
             {user.email && user.email.toLowerCase() === ADMIN_EMAIL && (
               <button className="btn" onClick={onOpenAdmin}>Admin</button>
             )}
@@ -641,6 +851,7 @@ function App() {
   const [user, setUser] = useState(null);
   const [checking, setChecking] = useState(true);
   const [adminView, setAdminView] = useState(false);
+  const [filesView, setFilesView] = useState(false);
 
   useEffect(() => {
     const token = localStorage.getItem('dsa_token');
@@ -660,13 +871,25 @@ function App() {
     localStorage.removeItem('dsa_token');
     setUser(null);
     setAdminView(false);
+    setFilesView(false);
   };
+
+  const isAdmin = !!(user && user.email && user.email.toLowerCase() === ADMIN_EMAIL);
 
   let screen;
   if (checking) screen = <div className="loadingScreen">Loading...</div>;
   else if (!user) screen = <AuthScreen onAuthed={setUser} />;
   else if (adminView) screen = <AdminPanel onBack={() => setAdminView(false)} />;
-  else screen = <Dashboard user={user} onLogout={logout} onUserUpdate={setUser} onOpenAdmin={() => setAdminView(true)} />;
+  else if (filesView) screen = <FilesPanel onBack={() => setFilesView(false)} isAdmin={isAdmin} />;
+  else screen = (
+    <Dashboard
+      user={user}
+      onLogout={logout}
+      onUserUpdate={setUser}
+      onOpenAdmin={() => setAdminView(true)}
+      onOpenFiles={() => setFilesView(true)}
+    />
+  );
 
   return (
     <React.Fragment>

@@ -8,11 +8,12 @@ const authRoutes = require('./routes/auth');
 const progressRoutes = require('./routes/progress');
 const visitRoutes = require('./routes/visit');
 const adminRoutes = require('./routes/admin');
+const fileRoutes = require('./routes/files');
 
 const app = express();
 
 app.use(cors());
-app.use(express.json({ limit: '2mb' }));
+app.use(express.json({ limit: '10mb' }));
 
 // --- MongoDB connection, cached across invocations (needed on serverless) ---
 let cachedConnection = null;
@@ -39,6 +40,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/progress', progressRoutes);
 app.use('/api/visit', visitRoutes);
 app.use('/api/admin', adminRoutes);
+app.use('/api/files', fileRoutes);
 
 // Serve the frontend (public/index.html + public/data/problems.json)
 app.use(express.static(path.join(__dirname, 'public')));
