@@ -34,6 +34,10 @@ header.top{position:sticky;top:0;z-index:5;background:linear-gradient(180deg,var
 .stat .num{font-size:26px;font-weight:800;}
 .stat .lbl{font-size:12px;color:var(--muted);margin-top:2px;}
 .stat.progress .num{color:var(--accent);}
+.streakRow{grid-template-columns:repeat(2,1fr);margin-top:-6px;}
+.streakCard{background:linear-gradient(135deg,var(--panel),var(--panel2));}
+.streakCard .num{font-size:22px;}
+@media (max-width:760px){.streakRow{grid-template-columns:1fr;}}
 .bar{height:8px;border-radius:5px;background:var(--panel2);overflow:hidden;margin-top:10px;}
 .bar>div{height:100%;background:linear-gradient(90deg,var(--accent-dim),var(--accent));}
 .breakdown{display:flex;gap:18px;margin:0 0 22px;flex-wrap:wrap;}
@@ -72,6 +76,9 @@ header.top{position:sticky;top:0;z-index:5;background:linear-gradient(180deg,var
 .muted{color:var(--muted);}
 .uploadCard{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:18px 20px;max-width:420px;}
 .uploadCard h4{margin:0 0 14px;font-size:14px;color:var(--text);}
+.lbAvatar{width:28px;height:28px;border-radius:50%;overflow:hidden;background:var(--panel2);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:var(--muted);}
+.lbAvatar img{width:100%;height:100%;object-fit:cover;}
+tr.lbSelf td{background:rgba(91,227,168,0.08);}
 .controls{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:14px;position:sticky;top:70px;z-index:4;background:var(--bg);padding:8px 0;}
 .controls input[type=text],.controls select{background:var(--panel);border:1px solid var(--border);color:var(--text);padding:9px 12px;border-radius:8px;font-size:14px;}
 .controls input[type=text]{flex:1;min-width:180px;}
@@ -694,9 +701,76 @@ function FilesPanel({ onBack, isAdmin }) {
   );
 }
 
-function Dashboard({ user, onLogout, onUserUpdate, onOpenAdmin, onOpenFiles }) {
+function LeaderboardPanel({ onBack, currentUserName }) {
+  const [rows, setRows] = useState(null);
+  const [err, setErr] = useState('');
+
+  useEffect(() => {
+    api('/leaderboard')
+      .then(d => setRows(d.leaderboard))
+      .catch(e => setErr(e.message));
+  }, []);
+
+  const medal = (i) => (i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : `#${i + 1}`);
+
+  return (
+    <div className="app">
+      <header className="top">
+        <div className="brandrow">
+          <div className="brand">
+            <h1>Leaderboard</h1>
+            <p className="credit">Ranked by problems solved</p>
+          </div>
+          <button className="btn" onClick={onBack}>← Back to problems</button>
+        </div>
+      </header>
+
+      {err && <div className="authErr">{err}</div>}
+
+      <div className="adminTableWrap">
+        <table className="adminTable">
+          <thead>
+            <tr>
+              <th>Rank</th>
+              <th></th>
+              <th>Name</th>
+              <th>Solved</th>
+              <th>Current streak</th>
+              <th>Longest streak</th>
+            </tr>
+          </thead>
+          <tbody>
+            {rows === null && (
+              <tr><td colSpan="6" className="adminEmpty">Loading...</td></tr>
+            )}
+            {rows && rows.length === 0 && (
+              <tr><td colSpan="6" className="adminEmpty">No one has solved anything yet.</td></tr>
+            )}
+            {rows && rows.map((r, i) => (
+              <tr key={i} className={r.name === currentUserName ? 'lbSelf' : ''}>
+                <td>{medal(i)}</td>
+                <td>
+                  <span className="lbAvatar">
+                    {r.photo ? <img src={r.photo} alt={r.name} /> : <span>{(r.name || '?').charAt(0).toUpperCase()}</span>}
+                  </span>
+                </td>
+                <td>{r.name}{r.name === currentUserName ? ' (you)' : ''}</td>
+                <td>{r.solvedCount}</td>
+                <td>🔥 {r.currentStreak}</td>
+                <td>{r.longestStreak}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
+function Dashboard({ user, onLogout, onUserUpdate, onOpenAdmin, onOpenFiles, onOpenLeaderboard }) {
   const [problems, setProblems] = useState([]);
   const [progress, setProgress] = useState(user.progress || {});
+  const [streak, setStreak] = useState(user.streak || { current: 0, longest: 0 });
   const [query, setQuery] = useState('');
   const [srcFilter, setSrcFilter] = useState('All');
   const [catFilter, setCatFilter] = useState('All');
@@ -715,6 +789,7 @@ function Dashboard({ user, onLogout, onUserUpdate, onOpenAdmin, onOpenFiles }) {
       const body = { problemId: n, ...patch };
       const data = await api('/progress', { method: 'PUT', body: JSON.stringify(body) });
       setProgress(data.progress);
+      if (data.streak) setStreak(data.streak);
     } catch (e) {
       console.error(e);
     }
@@ -770,6 +845,7 @@ function Dashboard({ user, onLogout, onUserUpdate, onOpenAdmin, onOpenFiles }) {
               }}
             />
             <button className="btn" onClick={onOpenFiles}>Files</button>
+            <button className="btn" onClick={onOpenLeaderboard}>Leaderboard</button>
             {user.email && user.email.toLowerCase() === ADMIN_EMAIL && (
               <button className="btn" onClick={onOpenAdmin}>Admin</button>
             )}
@@ -788,6 +864,17 @@ function Dashboard({ user, onLogout, onUserUpdate, onOpenAdmin, onOpenFiles }) {
           <div className="num">{pct}%</div>
           <div className="lbl">Progress</div>
           <div className="bar"><div style={{width: pct + '%'}}></div></div>
+        </div>
+      </section>
+
+      <section className="stats streakRow">
+        <div className="stat streakCard">
+          <div className="num">🔥 {streak.current}</div>
+          <div className="lbl">Day streak {streak.current > 0 ? '— keep it going!' : '— solve something today'}</div>
+        </div>
+        <div className="stat streakCard">
+          <div className="num">🏅 {streak.longest}</div>
+          <div className="lbl">Longest streak</div>
         </div>
       </section>
 
@@ -852,6 +939,7 @@ function App() {
   const [checking, setChecking] = useState(true);
   const [adminView, setAdminView] = useState(false);
   const [filesView, setFilesView] = useState(false);
+  const [leaderboardView, setLeaderboardView] = useState(false);
 
   useEffect(() => {
     const token = localStorage.getItem('dsa_token');
@@ -872,6 +960,7 @@ function App() {
     setUser(null);
     setAdminView(false);
     setFilesView(false);
+    setLeaderboardView(false);
   };
 
   const isAdmin = !!(user && user.email && user.email.toLowerCase() === ADMIN_EMAIL);
@@ -881,6 +970,7 @@ function App() {
   else if (!user) screen = <AuthScreen onAuthed={setUser} />;
   else if (adminView) screen = <AdminPanel onBack={() => setAdminView(false)} />;
   else if (filesView) screen = <FilesPanel onBack={() => setFilesView(false)} isAdmin={isAdmin} />;
+  else if (leaderboardView) screen = <LeaderboardPanel onBack={() => setLeaderboardView(false)} currentUserName={user.name} />;
   else screen = (
     <Dashboard
       user={user}
@@ -888,6 +978,7 @@ function App() {
       onUserUpdate={setUser}
       onOpenAdmin={() => setAdminView(true)}
       onOpenFiles={() => setFilesView(true)}
+      onOpenLeaderboard={() => setLeaderboardView(true)}
     />
   );
 

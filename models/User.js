@@ -26,7 +26,12 @@ const UserSchema = new mongoose.Schema(
       type: Map,
       of: ProgressEntrySchema,
       default: {}
-    }
+    },
+    // Daily solving streak — updated whenever a problem is newly marked solved
+    currentStreak: { type: Number, default: 0 },
+    longestStreak: { type: Number, default: 0 },
+    // "YYYY-MM-DD" (UTC) of the last day a problem was marked solved
+    lastActiveDate: { type: String, default: null }
   },
   { timestamps: true }
 );

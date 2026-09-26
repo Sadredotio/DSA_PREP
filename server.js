@@ -9,6 +9,7 @@ const progressRoutes = require('./routes/progress');
 const visitRoutes = require('./routes/visit');
 const adminRoutes = require('./routes/admin');
 const fileRoutes = require('./routes/files');
+const leaderboardRoutes = require('./routes/leaderboard');
 
 const app = express();
 
@@ -41,6 +42,7 @@ app.use('/api/progress', progressRoutes);
 app.use('/api/visit', visitRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/files', fileRoutes);
+app.use('/api/leaderboard', leaderboardRoutes);
 
 // Serve the frontend (public/index.html + public/data/problems.json)
 app.use(express.static(path.join(__dirname, 'public')));

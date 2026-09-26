@@ -20,7 +20,11 @@ function publicUser(user) {
     name: user.name,
     email: user.email,
     photo: user.photo || '',
-    progress: Object.fromEntries(user.progress || new Map())
+    progress: Object.fromEntries(user.progress || new Map()),
+    streak: {
+      current: user.currentStreak || 0,
+      longest: user.longestStreak || 0
+    }
   };
 }
 
