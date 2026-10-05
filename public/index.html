@@ -419,7 +419,7 @@ function ProblemCard({p, solved, remark, onToggle, onRemark, srcAKey}){
         </div>
         <div className="cbody">
           <div className="ctitle">
-            <span className={"name" + (solved ? " done" : "")}>{p.n}. {p.t}</span>
+            <span className={"name" + (solved ? " done" : "")}>{p.sno}. {p.t}</span>
             <span className={"badge " + srcClass}>{p.s}</span>
             <span className="badge">{p.c}</span>
           </div>
