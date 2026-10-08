@@ -1089,8 +1089,8 @@ function Dashboard({ user, onLogout, onUserUpdate, onOpenAdmin, onOpenFiles, onO
   const setRemark = useCallback((n, val) => updateProgress(n, { remark: val }), [updateProgress]);
 
   const solvedCount = useMemo(
-    () => Object.values(progress).filter(v => v && v.solved).length,
-    [progress]
+    () => problems.filter(p => progress[p.n] && progress[p.n].solved).length,
+    [problems, progress]
   );
   const total = problems.length;
   const pct = total ? Math.round((solvedCount / total) * 100) : 0;

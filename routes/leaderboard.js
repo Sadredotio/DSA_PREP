@@ -4,6 +4,17 @@ const { requireAuth } = require('../middleware/auth');
 
 const router = express.Router();
 
+// Only count problems that still exist in problems.json (removed duplicates
+// can leave orphaned ids in users' saved progress).
+let validIds = null;
+function getValidIds() {
+  if (!validIds) {
+    const list = require('../public/data/problems.json');
+    validIds = new Set(list.map((p) => String(p.n)));
+  }
+  return validIds;
+}
+
 // GET /api/leaderboard — any logged-in user.
 // Ranked by problems solved, then by current streak.
 router.get('/', requireAuth, async (req, res) => {
@@ -13,8 +24,9 @@ router.get('/', requireAuth, async (req, res) => {
       .lean();
 
     const rows = users.map((u) => {
-      const solvedCount = Object.values(u.progress || {}).filter(
-        (p) => p && p.solved
+      const ids = getValidIds();
+      const solvedCount = Object.entries(u.progress || {}).filter(
+        ([id, p]) => ids.has(String(id)) && p && p.solved
       ).length;
       return {
         name: u.name,
